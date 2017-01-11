@@ -23,21 +23,36 @@ lm.Update = function() {
   };
 };
 
-lm.FormatJSON = function(responseJSON) { // key is line name
+lm.FormatJSON = function(vehicleObj) { // array-like object with index keys
   var inboundOutboundJSON = {
     inbound: {}, 
     outbound: {}
   };
   var direction = '';
-  var current = {};
+  var isOutbound = false;
+  var directionObj = {};
+  var newVehicle = {};
   var val = {};
-  var formattedJSON = Object.keys(responseJSON).reduce(function(acc, key) {
-    val = responseJSON[key];
-    direction = val.dirTag.indexOf('_O_') > 0 ? 'outbound' : 'inbound';
-    current = acc[direction][val.routeTag] || {};
-    // debugger;
-    current[val.id] = val;
-    return Object.assign()
+  var formattedJSON = Object.keys(vehicleObj).reduce(function(acc, key) {
+    currentVehicle = vehicleObj[key];
+    // Drop vehicles without direction
+    if (!currentVehicle._dirTag) {
+      return acc;
+    }
+    // Determine inbound / outbound
+    isOutbound = currentVehicle._dirTag.indexOf('_O_') > 0;
+    direction = isOutbound ? 'outbound' : 'inbound';
+
+    // Capture the object to be modified
+    directionObj = acc[direction];
+
+    // Add LINE as a Key
+    directionObj[currentVehicle._routeTag] = directionObj[currentVehicle._routeTag] || {};
+
+    // Add BUS to LINE
+    newVehicle = directionObj[currentVehicle._routeTag];
+    newVehicle[currentVehicle._id] = currentVehicle; // removes duplicate IDs, if there are any
+    
+    return Object.assign(acc, isOutbound ? {outbound: directionObj} : {inbound: directionObj});
   }, inboundOutboundJSON);
-  debugger;
 };
