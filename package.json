@@ -1,0 +1,23 @@
+{
+  "name": "livemuni2",
+  "version": "1.0.0",
+  "description": "Livemuni2",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon server/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rps/livemuni2.git"
+  },
+  "author": "Rich Parrish",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rps/livemuni2/issues"
+  },
+  "homepage": "https://github.com/rps/livemuni2#readme",
+  "dependencies": {
+    "nodemon": "^1.11.0",
+    "request": "^2.79.0"
+  }
+}

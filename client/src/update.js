@@ -5,7 +5,6 @@ firebase.initializeApp(config); // initialize firebase
 var database = firebase.database(); // database connection
 
 lm.Update = function() {
-  console.log('test');
   var request = new XMLHttpRequest();
   var url = 'http://webservices.nextbus.com/service/publicXMLFeed?command=vehicleLocations&a=' + agency + '&t=0';
 
