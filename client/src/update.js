@@ -15,8 +15,9 @@ lm.Update = function() {
   request.onreadystatechange = function() {
     if(request.readyState === 4) { // done
       if(request.status === 200) { // complete 
-        // var responseJSON = xmlToJSON.parseString(request.responseText);
-        lm.FormatJSON(responseJSON.body[0].vehicle); // array of vehicles and _attr
+        var x2js = new X2JS();
+        var jsonObj = x2js.xml2json(request.responseXML);
+        lm.FormatJSON(jsonObj.body.vehicle); // array of vehicles
       }
     }
   };
@@ -32,10 +33,10 @@ lm.FormatJSON = function(responseJSON) { // key is line name
   var val = {};
   var formattedJSON = Object.keys(responseJSON).reduce(function(acc, key) {
     val = responseJSON[key];
-    direction = val._attr.dirTag.indexOf('_O_') > 0 ? 'outbound' : 'inbound';
-    current = acc[direction][val._attr.routeTag] || {};
+    direction = val.dirTag.indexOf('_O_') > 0 ? 'outbound' : 'inbound';
+    current = acc[direction][val.routeTag] || {};
     // debugger;
-    current[val._attr.id] = val._attr;
+    current[val.id] = val;
     return Object.assign()
   }, inboundOutboundJSON);
   debugger;
