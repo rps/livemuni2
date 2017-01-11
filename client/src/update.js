@@ -2,6 +2,7 @@ var lm = {};
 var agency = 'sf-muni';
 
 firebase.initializeApp(config); // initialize firebase
+var database = firebase.database(); // database connection
 
 lm.Update = function() {
   console.log('test');
@@ -47,6 +48,7 @@ lm.FormatJSON = function(vehicleObj) { // array-like object with index keys
     directionObj = acc[direction];
 
     // Add LINE as a Key
+    // May explicitly need to change _routeTag and _id to strings for Firebase
     directionObj[currentVehicle._routeTag] = directionObj[currentVehicle._routeTag] || {};
 
     // Add BUS to LINE
