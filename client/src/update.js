@@ -1,8 +1,8 @@
 var lm = {};
 var agency = 'sf-muni';
 
-firebase.initializeApp(config); // initialize firebase
-var database = firebase.database(); // database connection
+var fb = firebase.initializeApp(config); // initialize firebase
+var db = fb.database(); // database connection
 
 lm.Update = function() {
   var request = new XMLHttpRequest();
@@ -56,4 +56,12 @@ lm.FormatJSON = function(vehicleObj) { // array-like object with index keys
     
     return Object.assign(acc, isOutbound ? {outbound: directionObj} : {inbound: directionObj});
   }, inboundOutboundJSON);
+  lm.saveToFirebase(formattedJSON);
 };
+
+lm.saveToFirebase = function(json) {
+  console.log('saving');
+  db.ref().set(json).then(function(a, b, c) {
+    console.log('saved!');
+  });
+}
