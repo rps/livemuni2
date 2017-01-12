@@ -2,14 +2,12 @@ var request = require('request');
 var http = require('http');
 var parser = require('xml2json');
 var config = require('../config.js') || process.env;
-var firebase = require('firebase');
+var admin = require('firebase-admin');
+var serviceAccount = require('../Livemuni2-196985dacc4a.json');
 
-firebase.initializeApp({
-  apiKey: config.apiKey,
-  authDomain: config.authDomain,
-  databaseURL: config.databaseURL,
-  storageBucket: config.storageBucket,
-  messagingSenderId: config.messagingSenderId
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: config.databaseURL
 });
 
 var lm = {
@@ -46,7 +44,6 @@ var lm = {
       directionObj = acc[direction];
 
       // Add LINE as a Key
-      // May explicitly need to change routeTag and id to strings for Firebase
       directionObj[currentVehicle.routeTag] = directionObj[currentVehicle.routeTag] || {};
 
       // Add BUS to LINE
@@ -75,7 +72,7 @@ var lm = {
   saveToFirebase: function(result) {
     console.log('saving to firebase');
 
-    firebase.database().ref('/').set(result).then(function(a, b) {
+    admin.database().ref('/').set(result).then(function() {
       console.log('saved!');
     });
   },
