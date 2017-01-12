@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/rps/livemuni2#readme",
   "dependencies": {
+    "firebase": "^3.6.5",
     "nodemon": "^1.11.0",
     "request": "^2.79.0",
     "xml2json": "^0.10.0"

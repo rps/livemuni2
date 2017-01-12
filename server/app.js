@@ -1,9 +1,23 @@
 var request = require('request');
 var http = require('http');
 var parser = require('xml2json');
+var config = require('../config.js');
+var firebase = require('firebase/app');
+var firebaseDB = require('firebase/database');
+
+var fb = firebase.initializeApp(config);
+var db = fb.database();
 
 var lm = {
-  FormatJSON: function(vehicleObj) { // array-like object with index keys
+  formatJSON: function(body) { 
+    var responseJSON = parser.toJson(body, {object: true});
+    var vehicleObj = responseJSON.body.vehicle; // array-like object with index keys
+
+    /* This value can be used as the “t” parameter for the next call to the vehicleLocations
+    command so that only GPS reports since the last time the command was called will be returned.
+    This is useful for preventing reading in vehicle locations that have not changed */
+    var lastTime = responseJSON.body.lastTime.time;
+
     var inboundOutboundJSON = {
       inbound: {}, 
       outbound: {}
@@ -16,7 +30,7 @@ var lm = {
       currentVehicle = vehicleObj[key];
       // Drop & log vehicles without direction tags
       if (!currentVehicle.dirTag) {
-        console.log('no dirTag on id:', currentVehicle.id);
+        // console.log('no dirTag on id:', currentVehicle.id);
         return acc;
       }
 
@@ -38,7 +52,28 @@ var lm = {
       return Object.assign(acc, isOutbound ? {outbound: directionObj} : {inbound: directionObj});
     }, inboundOutboundJSON);
     return formattedJSON;
-  }
+  },
+  getAndWriteData: function() {
+    var currentTime = new Date(Date.now())
+    console.log('querying at: ', currentTime)
+    var agency = 'sf-muni'; // many options: http://webservices.nextbus.com/service/publicXMLFeed?command=agencyList
+    var time = '0';         // after epoch time; 0 is last 15 minutes
+    var url = 'http://webservices.nextbus.com/service/publicXMLFeed?command=vehicleLocations&a='+agency+'&t='+time;
+    var cb = function (error, response, body) {
+      if (!error && response.statusCode == 200) {
+        var result = lm.formatJSON(body);
+        lm.saveToFirebase(result);
+      }
+    }
+
+    request(url, cb);
+  },
+  saveToFirebase: function(result) {
+    console.log('saving to firebase');
+    db.ref('/node').set(result).then(function(a, b, c) {
+      console.log('saved!');
+    });
+  },
 };
 
 http.createServer(function(req, res) {
@@ -51,31 +86,15 @@ http.createServer(function(req, res) {
     console.error(err);
   });
 
+  setInterval(lm.getAndWriteData, 10000);
+
   if (req.method === 'GET' && req.url === '/') {
-    var agency = 'sf-muni'; // many options: http://webservices.nextbus.com/service/publicXMLFeed?command=agencyList
-    var time = '0';         // after epoch time; 0 is last 15 minutes
-    var url = 'http://webservices.nextbus.com/service/publicXMLFeed?command=vehicleLocations&a='+agency+'&t='+time;
-    var cb = function (error, response, body) {
-      if (!error && response.statusCode == 200) {
-        var responseJSON = parser.toJson(body, {object: true});
-        var result = lm.FormatJSON(responseJSON.body.vehicle);
-
-        /* This value can be used as the “t” parameter for the next call to the vehicleLocations
-        command so that only GPS reports since the last time the command was called will be returned.
-        This is useful for preventing reading in vehicle locations that have not changed */
-        var lastTime = responseJSON.body.lastTime.time;
-        
-        res.statusCode = 200;   
-        res.end(JSON.stringify(result));
-      } else {
-        res.statusCode = 500;
-        res.end();
-      }
-    };
-
-    request(url, cb);
+    res.statusCode = 200;
+    res.end('Online');
   } else {
     res.statusCode = 404;
     res.end();
   }
+}).on('listening', function (){
+  setInterval(lm.getAndWriteData, 10000);
 }).listen(8080);
