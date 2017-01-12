@@ -1,16 +1,20 @@
 var request = require('request');
 var http = require('http');
 var parser = require('xml2json');
-var config = require('../config.js');
+var config = require('../config.js') || process.env;
 var firebase = require('firebase/app');
 var firebaseDB = require('firebase/database');
 var admin = require("firebase-admin");
 var serviceAccount = require("../Livemuni2-196985dacc4a.json");
 
-var fb = firebase.initializeApp(config);
-var db = fb.database();
-
 var lm = {
+  fb: firebase.initializeApp({
+    apiKey: config.apiKey,
+    authDomain: config.authDomain,
+    databaseURL: config.databaseURL,
+    storageBucket: config.storageBucket,
+    messagingSenderId: config.messagingSenderId
+  }),
   formatJSON: function(body) { 
     var responseJSON = parser.toJson(body, {object: true});
     var vehicleObj = responseJSON.body.vehicle; // array-like object with index keys
@@ -72,7 +76,8 @@ var lm = {
   },
   saveToFirebase: function(result) {
     console.log('saving to firebase');
-    db.ref('/node').set(result).then(function(a, b, c) {
+
+    lm.fb.database().ref('/node').set(result).then(function() {
       console.log('saved!');
     });
   },
