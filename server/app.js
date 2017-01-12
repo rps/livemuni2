@@ -4,6 +4,8 @@ var parser = require('xml2json');
 var config = require('../config.js');
 var firebase = require('firebase/app');
 var firebaseDB = require('firebase/database');
+var admin = require("firebase-admin");
+var serviceAccount = require("../Livemuni2-196985dacc4a.json");
 
 var fb = firebase.initializeApp(config);
 var db = fb.database();
@@ -84,6 +86,11 @@ http.createServer(function(req, res) {
   });
   res.on('error', function(err) {
     console.error(err);
+  });
+
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: config.databaseURL
   });
 
   setInterval(lm.getAndWriteData, 10000);
