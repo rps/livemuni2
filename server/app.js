@@ -1,13 +1,12 @@
 var request = require('request');
 var http = require('http');
 var parser = require('xml2json');
-var config = require('../config.js') || process.env;
 var admin = require('firebase-admin');
-var serviceAccount = require('../Livemuni2-196985dacc4a.json');
+var serviceAccount = require('../serviceAccount.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: config.databaseURL
+  databaseURL: process.env.DATABASE_URL
 });
 
 var lm = {
@@ -99,4 +98,4 @@ http.createServer(function(req, res) {
   }
 }).on('listening', function (){
   setInterval(lm.getAndWriteData, 10000);
-}).listen(8080);
+}).listen(process.env.PORT || 8080);
