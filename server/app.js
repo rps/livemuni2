@@ -10,6 +10,11 @@ admin.initializeApp({
 });
 
 var lm = {
+  fetch: function() {
+    return admin.database().ref().once('value').then(function(snapshot) {
+      return snapshot.val();
+    });
+  },
   formatJSON: function(body) { 
     var responseJSON = parser.toJson(body, {object: true});
     var vehicleObj = responseJSON.body.vehicle; // array-like object with index keys
@@ -89,9 +94,14 @@ http.createServer(function(req, res) {
 
   setInterval(lm.getAndWriteData, 10000);
 
-  if (req.method === 'GET' && req.url === '/') {
-    res.statusCode = 200;
-    res.end('Online');
+  if (req.method === 'GET') {
+    if(req.url === '/') {
+      res.statusCode = 200;
+      res.end('Online');
+    } else if(req.url === '/all') {
+      res.statusCode = 200;
+      res.end(lm.fetch());
+    }
   } else {
     res.statusCode = 404;
     res.end();
