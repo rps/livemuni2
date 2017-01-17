@@ -92,20 +92,26 @@ http.createServer(function(req, res) {
     console.error(err);
   });
 
-  setInterval(lm.getAndWriteData, 10000);
-
   if (req.method === 'GET') {
     if(req.url === '/') {
       res.statusCode = 200;
       res.end('Online');
     } else if(req.url === '/all') {
       res.statusCode = 200;
-      res.end(lm.fetch());
+      var allBuses = lm.fetch();
+      allBuses.then(
+        function(buses) {
+          res.end(JSON.stringify(buses));
+        }, function() {
+          res.end('No Data');
+        }
+      );
     }
   } else {
     res.statusCode = 404;
     res.end();
   }
 }).on('listening', function (){
+  console.log('Listening on: ', process.env.PORT || 8080);
   setInterval(lm.getAndWriteData, 10000);
 }).listen(process.env.PORT || 8080);
