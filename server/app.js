@@ -56,18 +56,20 @@ var lm = {
       
       return Object.assign(acc, isOutbound ? {outbound: directionObj} : {inbound: directionObj});
     }, inboundOutboundJSON);
-    return formattedJSON;
+    return {locations: formattedJSON, time: lastTime};
   },
   getAndWriteData: function() {
     var currentTime = new Date(Date.now())
     console.log('querying at: ', currentTime)
     var agency = 'sf-muni'; // many options: http://webservices.nextbus.com/service/publicXMLFeed?command=agencyList
-    var time = '0';         // after epoch time; 0 is last 15 minutes
+    var time = lm.time;         // after epoch time; 0 is last 15 minutes
     var url = 'http://webservices.nextbus.com/service/publicXMLFeed?command=vehicleLocations&a='+agency+'&t='+time;
     var cb = function (error, response, body) {
       if (!error && response.statusCode == 200) {
         var result = lm.formatJSON(body);
-        lm.saveToFirebase(result);
+        var locations = result.locations;
+        lm.time = result.time || '0';
+        lm.saveToFirebase(locations);
       }
     }
 
@@ -80,6 +82,7 @@ var lm = {
       console.log('saved!');
     });
   },
+  time: '0'
 };
 
 http.createServer(function(req, res) {
