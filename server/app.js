@@ -24,61 +24,56 @@ var lm = {
     This is useful for preventing reading in vehicle locations that have not changed */
     var lastTime = responseJSON.body.lastTime.time;
 
-    var inboundOutboundJSON = {
-      inbound: {}, 
-      outbound: {}
-    };
-    var direction = '';
-    var isOutbound = false;
-    var directionObj = {};
-    var newVehicle = {};
     var formattedJSON = Object.keys(vehicleObj).reduce(function(acc, key) {
       currentVehicle = vehicleObj[key];
-      // Drop & log vehicles without direction tags
-      if (!currentVehicle.dirTag) {
-        // console.log('no dirTag on id:', currentVehicle.id);
-        return acc;
+
+      if (currentVehicle.dirTag) {
+        acc[currentVehicle.dirTag] = acc[currentVehicle.dirTag] || {};
+        acc[currentVehicle.dirTag][currentVehicle.id] = {
+          id: currentVehicle.id,
+          dirTag: currentVehicle.dirTag,
+          routeTag: currentVehicle.routeTag,
+          lat: currentVehicle.lat,
+          lon: currentVehicle.lon
+        };
       }
 
-      // Determine inbound / outbound
-      isOutbound = currentVehicle.dirTag.indexOf('_O_') > 0;
-      direction = isOutbound ? 'outbound' : 'inbound';
-
-      // Capture the object to be modified
-      directionObj = acc[direction];
-
-      // Add LINE as a Key
-      directionObj[currentVehicle.routeTag] = directionObj[currentVehicle.routeTag] || {};
-
-      // Add BUS to LINE
-      newVehicle = directionObj[currentVehicle.routeTag];
-      newVehicle[currentVehicle.id] = currentVehicle; // removes duplicate IDs, if there are any
-      
-      return Object.assign(acc, isOutbound ? {outbound: directionObj} : {inbound: directionObj});
-    }, inboundOutboundJSON);
-    return {locations: formattedJSON, time: lastTime};
+      return acc;
+    }, {});
+    return {directions: formattedJSON, time: lastTime};
   },
   getAndWriteData: function() {
     var currentTime = new Date(Date.now())
     console.log('querying at: ', currentTime)
     var agency = 'sf-muni'; // many options: http://webservices.nextbus.com/service/publicXMLFeed?command=agencyList
-    var time = lm.time;         // after epoch time; 0 is last 15 minutes
+    var time = lm.time;     // after epoch time; 0 is last 15 minutes
     var url = 'http://webservices.nextbus.com/service/publicXMLFeed?command=vehicleLocations&a='+agency+'&t='+time;
     var cb = function (error, response, body) {
       if (!error && response.statusCode == 200) {
         var result = lm.formatJSON(body);
-        var locations = result.locations;
-        lm.time = result.time || '0';
-        lm.saveToFirebase(locations);
+        var directions = result.directions;
+        lm.time === '0' ? lm.setToFirebase(directions) : lm.saveToFirebase(directions);
+        lm.time = result.time;
       }
     }
 
     request(url, cb);
   },
   saveToFirebase: function(result) {
-    console.log('saving to firebase');
-
-    admin.database().ref('/').set(result).then(function() {
+    console.log('UPDATING firebase');
+    var updates = {};
+    Object.keys(result).forEach(function(dirTag, i) {
+      Object.keys(result[dirTag]).forEach(function(id, i) {
+        updates['/buses-by-dirtag/' + dirTag + '/' + id] = result[dirTag][id];
+      });
+    });
+    admin.database().ref().update(updates).then(function() {
+      console.log('saved!');
+    });
+  },
+  setToFirebase: function(result) {
+    console.log('SETTING firebase');
+    admin.database().ref('/buses-by-dirtag/').set(result).then(function() {
       console.log('saved!');
     });
   },
